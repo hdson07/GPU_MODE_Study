@@ -19,7 +19,7 @@
 - prof.key_averages().table() 연산을 정리하여 테이블 출력
 - Torch Profiler Example code : pt_profiler.py
     
-- Trace File, Open in ( chrome://tracing )
+- Trace File, Open in [Chrome Trace](chrome://tracing)
     
     [test_trace_4.json](ref/test_trace_4.json)
     
@@ -95,7 +95,7 @@ Triton을 이용하여 CUDA GPU, Square 연산 최적화
         
     2. Optimization, fix block_size as 1024
         
-        ![fix block_size as 1024](ref/compare_perf_org.png)
+        ![fix block_size as 1024](ref/compare_perf_opt.png)
         
         [performance-comparison-chart.tsx](ref/performance-comparison-chart.tsx)
         
