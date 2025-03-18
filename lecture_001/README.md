@@ -21,11 +21,11 @@
     
 - Trace File, Open in ( chrome://tracing )
     
-    [test_trace_4.json](attachment:3af595b9-d6a2-46b3-8073-5376950fbb55:test_trace_4.json)
+    [test_trace_4.json](ref/test_trace_4.json)
     
-    ![Screenshot 2025-03-16 at 1.32.24 PM.png](attachment:92d7d5a1-27ae-49f1-97b3-2e5eb3591f05:Screenshot_2025-03-16_at_1.32.24_PM.png)
+    ![Trace Example](ref/trace1.png)
     
-    ![Screenshot 2025-03-16 at 1.32.09 PM.png](attachment:79ed5f8a-acd5-42d5-b68c-e301d18a22c1:Screenshot_2025-03-16_at_1.32.09_PM.png)
+    ![Trace Example](ref/trace2.png)
     
     - ProfileStep#2 : warmup , ProfileStep#3 : active - 실제 프로파일링
     - Call Square fucntion → call aten function
@@ -66,106 +66,6 @@ square_matrix_extension = load_inline(
 ## Integrate a Triton
 
 - Triotion Opt Code ( square_triton.py )
-    
-    ```python
-    # Adapted straight from https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html
-    import triton
-    import triton.language as tl
-    import torch
-    
-    # if @triton.jit(interpret=True) does not work, please use the following two lines to enable interpret mode
-    # import os
-    # os.environ["TRITON_INTERPRET"] = "1"
-    
-    @triton.jit
-    def square_kernel(output_ptr, input_ptr, input_row_stride, output_row_stride, n_cols, BLOCK_SIZE: tl.constexpr):
-        # The rows of the softmax are independent, so we parallelize across those
-        row_idx = tl.program_id(0)
-        # The stride represents how much we need to increase the pointer to advance 1 row
-        row_start_ptr = input_ptr + row_idx * input_row_stride
-        # The block size is the next power of two greater than n_cols, so we can fit each
-        # row in a single block
-        col_offsets = tl.arange(0, BLOCK_SIZE)
-        input_ptrs = row_start_ptr + col_offsets
-        # Load the row into SRAM, using a mask since BLOCK_SIZE may be > than n_cols
-        row = tl.load(input_ptrs, mask=col_offsets < n_cols, other=-float('inf'))
-    
-        square_output = row * row
-        
-        # Write back output to DRAM
-        output_row_start_ptr = output_ptr + row_idx * output_row_stride
-        output_ptrs = output_row_start_ptr + col_offsets
-        tl.store(output_ptrs, square_output, mask=col_offsets < n_cols)
-    
-    def square(x):
-        n_rows, n_cols = x.shape
-        # The block size is the smallest power of two greater than the number of columns in `x`
-        BLOCK_SIZE = triton.next_power_of_2(n_cols)
-        # Another trick we can use is to ask the compiler to use more threads per row by
-        # increasing the number of warps (`num_warps`) over which each row is distributed.
-        # You will see in the next tutorial how to auto-tune this value in a more natural
-        # way so you don't have to come up with manual heuristics yourself.
-        num_warps = 4
-        if BLOCK_SIZE >= 2048:
-            num_warps = 8
-        if BLOCK_SIZE >= 4096:
-            num_warps = 16
-        # Allocate output
-        y = torch.empty_like(x)
-        # Enqueue kernel. The 1D launch grid is simple: we have one kernel instance per row o
-        # f the input matrix
-        square_kernel[(n_rows, )](
-            y,
-            x,
-            x.stride(0),
-            y.stride(0),
-            n_cols,
-            num_warps=num_warps,
-            BLOCK_SIZE=BLOCK_SIZE,
-        )
-        return y
-    
-    torch.manual_seed(0)
-    x = torch.randn(1823, 781, device='cuda')
-    y_triton = square(x)
-    y_torch = torch.square(x)
-    assert torch.allclose(y_triton, y_torch), (y_triton, y_torch)
-    
-    @triton.testing.perf_report(
-        triton.testing.Benchmark(
-            x_names=['N'],  # argument names to use as an x-axis for the plot
-            x_vals=[128 * i for i in range(2, 100)],  # different possible values for `x_name`
-            line_arg='provider',  # argument name whose value corresponds to a different line in the plot
-            line_vals=[
-                'triton',
-                'torch-native',
-                'torch-compile'
-            ],  # possible values for `line_arg``
-            line_names=[
-                "Triton",
-                "Torch (native)",
-                "Torch (compiled)"
-            ],  # label name for the lines
-            styles=[('blue', '-'), ('green', '-'), ('green', '--')],  # line styles
-            ylabel="GB/s",  # label name for the y-axis
-            plot_name="square() performance",  # name for the plot. Used also as a file name for saving the plot.
-            args={'M': 4096},  # values for function arguments not in `x_names` and `y_name`
-        ))
-    def benchmark(M, N, provider):
-        x = torch.randn(M, N, device='cuda', dtype=torch.float32)
-        quantiles = [0.5, 0.2, 0.8]
-        if provider == 'torch-native':
-            ms, min_ms, max_ms = triton.testing.do_bench(lambda: torch.square(x), quantiles=quantiles)
-        if provider == 'triton':
-            ms, min_ms, max_ms = triton.testing.do_bench(lambda: square(x), quantiles=quantiles)
-        if provider == 'torch-compile':
-            ms, min_ms, max_ms = triton.testing.do_bench(lambda: torch.compile(torch.square)(x), quantiles=quantiles)
-        gbps = lambda ms: 2 * x.nelement() * x.element_size() * 1e-9 / (ms * 1e-3)
-        return gbps(ms), gbps(max_ms), gbps(min_ms)
-    
-    benchmark.run(show_plots=True, print_data=True, save_path='.')
-    ```
-    
 
 Triton을 이용하여 CUDA GPU, Square 연산 최적화
 
@@ -189,15 +89,15 @@ Triton을 이용하여 CUDA GPU, Square 연산 최적화
 - Perfermence View
     1. Dynamic Block Size  
         
-        ![Screenshot 2025-03-16 at 3.19.56 PM.png](attachment:a4437c26-9782-479b-9403-ba37a254a5b7:Screenshot_2025-03-16_at_3.19.56_PM.png)
+        ![Dynamic Block Szie](ref/compare_perf_org.png)
         
-        [square-performance-chart.tsx](attachment:d3492564-a914-4ac7-8dda-73acc94f2f73:square-performance-chart.tsx)
+        [square-performance-chart.tsx](ref/performance-comparison-chart.tsx)
         
     2. Optimization, fix block_size as 1024
         
-        ![Screenshot 2025-03-16 at 3.05.41 PM.png](attachment:767ff4a6-61c9-4839-af1f-f5cf35c5dec5:Screenshot_2025-03-16_at_3.05.41_PM.png)
+        ![fix block_size as 1024](ref/compare_perf_org.png)
         
-        [performance-comparison-chart.tsx](attachment:98f9f9c6-a82a-48b1-84eb-ed7841dffc88:performance-comparison-chart.tsx)
+        [performance-comparison-chart.tsx](ref/performance-comparison-chart.tsx)
         
 
 BLOCK_SIZE = 1024로 고정 시, triton 성능이 월등히 향상된 이유  
@@ -223,7 +123,7 @@ square_kernel.py → ptx 로 변환
 
 - PTX 세부 분석
     
-    [square_kernel.ptx](attachment:941675e4-7f90-4ff5-8b93-28890ae3c418:square_kernel.ptx)
+    [square_kernel.ptx](square_kernel.ptx)
     
     Kernel 진입점 정의 
     
@@ -309,7 +209,7 @@ square_kernel.py → ptx 로 변환
 
 ## NCU Profiler
 
-[triton-square-profile.py](attachment:4a9ad4ba-305d-4e41-b655-990c6c9c9927:triton-square-profile.py)
+[NCU_Profile/triton-square-profile.py](NCU_Profile/triton-square-profile.py)
 
 NVIDIA Nsignt Compute : CUDA Kernel 성능 분석, Bottleneck 최적화 
 
@@ -331,8 +231,7 @@ Profile Summary
 | **Grid Size** | CUDA 커널 실행 시 사용된 Grid 크기 (총 블록 개수) |
 | **Block Size [block]** | CUDA 블록 크기 (한 블록당 스레드 개수) |
 
-[table.csv](attachment:88c6f2b0-5bf8-42ab-840d-08730b38b4a3:table.csv)
-
+[NCU_Profile/table.csv](NCU_Profile/ncu_profile_summary_table.csv)
 Profile Table 분석 
 
 - Grid Size가 Test 별로 [ 1, 8, 64, 512, 512 ] 로 증가
@@ -344,7 +243,3 @@ Profile Table 분석
 → Grid Size가 작을 경우, 적은 Threads를 활용하며 Memory 비효율성이 높음 
 
 → Memory Load에서 Bottleneck이 존재하며, Block Size가 클 수록 완화 됨 
-
-torch.compile(torch.square) → 최적화 포인트의 시작 
-
-xnumel = huristic value
