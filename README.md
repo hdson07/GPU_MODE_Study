@@ -1,6 +1,7 @@
 # GPU 모드 강의 학습 노트
 
-이 저장소는 [gpu-mode/lectures](https://github.com/gpu-mode/lectures) 저장소의 자료와 관련 YouTube 강의를 학습하고 개인적으로 정리한 내용을 담고 있습니다.
+이 Repo [gpu-mode/lectures](https://github.com/gpu-mode/lectures)의 자료와 관련 YouTube 강의를 학습하고 개인적으로 정리한 내용입니다. 
+강의 내용과 GPT를 이용하여 정리를 진행하였으니, 오류가 있거나 부족한 부분이 있다면 언제든지 피드백 부탁드립니다.
 
 ## 학습 자료 출처
 
@@ -12,7 +13,7 @@
 | # | 강의명 | 강사 | 학습 완료 | 노트 정리 | 실습 완료 |
 |---|-------|------|:--------:|:--------:|:--------:|
 | 01 | Profiling and Integrating CUDA kernels in PyTorch | Mark Saroufim | ✅ | ✅ | ✅ |
-| 02 | Recap Ch. 1-3 from the PMPP book | Andreas Koepf | ❌ | ❌ | ❌ |
+| 02 | Recap Ch. 1-3 from the PMPP book | Andreas Koepf | ✅ | ✅ | ✅ |
 | 03 | Getting Started With CUDA | Jeremy Howard | ❌ | ❌ | ❌ |
 | 04 | Intro to Compute and Memory Architecture | Thomas Viehmann | ❌ | ❌ | ❌ |
 | 05 | Going Further with CUDA for Python Programmers | Jeremy Howard | ❌ | ❌ | ❌ |
